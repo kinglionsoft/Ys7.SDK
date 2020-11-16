@@ -1,0 +1,12 @@
+<Project>
+ <PropertyGroup>
+   <NoWarn>1701;1702;1591;1574;1573</NoWarn>
+   <LangVersion>latest</LangVersion>
+   <Version>0.0.1</Version>
+   <Company>K9</Company>
+   <Authors>K9</Authors>
+   <RepositoryUrl>https://github.com/kinglionsoft/Ys7.SDK</RepositoryUrl>
+   <Description>The SDK for https://open.ys7.com APIs.</Description>
+   <AspNetCorePackageVersion>3.1.0</AspNetCorePackageVersion>
+ </PropertyGroup>
+</Project>
