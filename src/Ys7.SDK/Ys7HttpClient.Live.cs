@@ -53,8 +53,13 @@ namespace Ys7.SDK
         /// <param name="validateCode">设备验证码，设备机身上的六位大写字母</param>
         /// <param name="deviceName">设备名称，长度不大于50字节，不能包含特殊字符</param>
         /// <param name="open">开通直播</param>
+        /// <param name="encrypt">是否加密视频。直播时不能加密</param>
         /// <returns></returns>
-        public async Task<ApiResult> AddDeviceAsync(string deviceSerial, string validateCode, string deviceName = null, bool open = true,
+        public async Task<ApiResult> AddDeviceAsync(string deviceSerial, 
+            string validateCode,
+            string deviceName = null, 
+            bool open = true,
+            bool encrypt = false,
             CancellationToken cancellation = default)
         {
             var result = await PostAsync<ApiResult>("/api/lapp/device/add",
@@ -68,37 +73,22 @@ namespace Ys7.SDK
                 // 设备已被自己添加
                 result.Code = "200";
             }
+
             if (result.Success && !string.IsNullOrEmpty(deviceName))
             {
                 result = await UpdateDeviceNameAsync(deviceSerial, deviceName, cancellation);
-                if (result.Code == "20002" /* 设备不存在 */
-                    || result.Code == "20018" /* 该用户不拥有该设备 */)
-                {
-                    result.Code = "200";
-                }
             }
 
             if (result.Success && open)
             {
-                var openResult = await OpenLiveAsync(new OpenLiveSource(deviceSerial), cancellation);
-                if (!openResult.Success)
-                {
-                    return openResult;
-                }
-
-                var liveRet = openResult.Data[0];
-
-                if (!liveRet.Success)
-                {
-                    if (liveRet.Ret == "60062") // 该通道直播已开通
-                    {
-                        return result;
-                    }
-
-                    result.Code = liveRet.Ret;
-                    result.Msg = liveRet.Desc;
-                }
+                result = await OpenLiveAsync(new OpenLiveSource(deviceSerial), cancellation);
             }
+
+            if (!encrypt)
+            {
+                result = await EncryptOffAsync(deviceSerial, validateCode, cancellation);
+            }
+
             return result;
         }
 
@@ -131,6 +121,13 @@ namespace Ys7.SDK
                     new KeyValuePair<string, string>("deviceSerial", deviceSerial),
                     new KeyValuePair<string, string>("deviceName", deviceName),
                 }, cancellation);
+
+            if (result.Code == "20002" /* 设备不存在 */
+                || result.Code == "20018" /* 该用户不拥有该设备 */)
+            {
+                result.Code = "200";
+            }
+
             return result;
         }
 
@@ -156,7 +153,7 @@ namespace Ys7.SDK
         /// <summary>
         /// 该接口用于根据序列号和通道量开通直播功能
         /// </summary>
-        public async Task<ApiResult<OpenLiveResult[]>> OpenLiveAsync(OpenLiveSource source, CancellationToken cancellation = default)
+        public async Task<ApiResult> OpenLiveAsync(OpenLiveSource source, CancellationToken cancellation = default)
         {
             if (source == null) throw new ArgumentNullException(nameof(source));
 
@@ -165,6 +162,58 @@ namespace Ys7.SDK
                 {
                     new KeyValuePair<string, string>("source", $"{source.DeviceSerial}:{source.ChannelNo}")
                 }, cancellation);
+
+            if (!result.Success)
+            {
+                return result;
+            }
+
+            var liveRet = result.Data[0];
+
+            if (!liveRet.Success)
+            {
+                if (liveRet.Ret == "60062") // 该通道直播已开通
+                {
+                    return result;
+                }
+
+                result.Code = liveRet.Ret;
+                result.Msg = liveRet.Desc;
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// 关闭设备视频加密
+        /// </summary>
+        public async Task<ApiResult<OpenLiveResult[]>> EncryptOffAsync(string deviceSerial, string validateCode, CancellationToken cancellation = default)
+        {
+            // https://open.ys7.com/doc/zh/book/index/device_switch.html#device_switch-api2
+
+            var result = await PostAsync<ApiResult<OpenLiveResult[]>>("/api/lapp/device/encrypt/off",
+                new[]
+                {
+                    new KeyValuePair<string, string>("deviceSerial", deviceSerial),
+                    new KeyValuePair<string, string>("validateCode", validateCode),
+                }, cancellation);
+            if (result.Code == "60016") result.Code = "200";
+            return result;
+        }
+
+        /// <summary>
+        /// 开启设备视频加密
+        /// </summary>
+        public async Task<ApiResult<OpenLiveResult[]>> EncryptOnAsync(string deviceSerial, CancellationToken cancellation = default)
+        {
+            // https://open.ys7.com/doc/zh/book/index/device_switch.html#device_switch-api2
+
+            var result = await PostAsync<ApiResult<OpenLiveResult[]>>("/api/lapp/device/encrypt/off",
+                new[]
+                {
+                    new KeyValuePair<string, string>("deviceSerial", deviceSerial),
+                }, cancellation);
+            if (result.Code == "60019") result.Code = "200";
             return result;
         }
     }

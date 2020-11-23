@@ -22,7 +22,7 @@ namespace SdkTest
 
             var sp = new ServiceCollection()
                 .AddYs7Sdk(configuration.GetSection("SDK").Bind)
-                .Configure<TestBase>(configuration.GetSection("Test").Bind)
+                .Configure<TestOptions>(configuration.GetSection("Test").Bind)
                 .BuildServiceProvider();
 
             Client = sp.GetRequiredService<Ys7HttpClient>();
