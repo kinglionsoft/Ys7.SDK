@@ -43,12 +43,7 @@ namespace Ys7.SDK
             using var response = await HttpClient.PostAsync(url, content, cancellation);
             var responseData = await response.Content.ReadAsStringAsync();
             var apiResult = JsonSerializer.Deserialize<T>(responseData);
-            if (apiResult.Success)
-            {
-                return apiResult;
-            }
-
-            throw new Ys7Exception($"url: {url}, error_msg: {apiResult.Msg}");
+            return apiResult;
         }
 
         #endregion

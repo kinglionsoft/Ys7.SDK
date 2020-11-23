@@ -39,12 +39,12 @@
         /// </summary>
         public int Exception { get; set; }
         /// <summary>
-        /// 
+        /// 开始时间，long格式如1472694964067，精确到毫秒。expireTime参数为空时该字段无效
         /// </summary>
-        public int BeginTime { get; set; }
+        public long BeginTime { get; set; }
         /// <summary>
-        /// 
+        /// 过期时间，long格式如1472794964067，精确到毫秒。expireTime参数为空时该字段无效
         /// </summary>
-        public int EndTime { get; set; }
+        public long EndTime { get; set; }
     }
 }
